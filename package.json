@@ -1,0 +1,53 @@
+{
+  "name": "inventory-management-cypress-tests",
+  "version": "1.0.0",
+  "description": "Comprehensive Cypress testing suite for inventory management system",
+  "scripts": {
+    "cy:open": "cypress open",
+    "cy:run": "cypress run",
+    "cy:run:sanity": "cypress run --env grepTags=\"@sanity\"",
+    "cy:run:regression": "cypress run --env grepTags=\"@regression\"",
+    "cy:run:smoke": "cypress run --env grepTags=\"@smoke\"",
+    "cy:run:auth": "cypress run --env grepTags=\"@auth\"",
+    "cy:run:crud": "cypress run --env grepTags=\"@crud\"",
+    "cy:run:security": "cypress run --env grepTags=\"@security\"",
+    "cy:run:performance": "cypress run --env grepTags=\"@performance\"",
+    "cy:run:a11y": "cypress run --env grepTags=\"@a11y\"",
+    "cy:run:responsive": "cypress run --env grepTags=\"@responsive\"",
+    "cy:run:chrome": "cypress run --browser chrome",
+    "cy:run:firefox": "cypress run --browser firefox",
+    "cy:run:edge": "cypress run --browser edge",
+    "cy:run:headless": "cypress run --headless",
+    "test:sanity": "npm run cy:run:sanity",
+    "test:regression": "npm run cy:run:regression",
+    "test:smoke": "npm run cy:run:smoke",
+    "test:all": "npm run cy:run",
+    "test:auth": "npm run cy:run:auth",
+    "test:crud": "npm run cy:run:crud",
+    "test:security": "npm run cy:run:security",
+    "start:backend": "cd backend && npm start",
+    "start:frontend": "cd frontend && npm start",
+    "start:services": "concurrently \"npm run start:backend\" \"npm run start:frontend\"",
+    "test:e2e": "start-server-and-test start:services http://localhost:3000 cy:run",
+    "test:e2e:sanity": "start-server-and-test start:services http://localhost:3000 cy:run:sanity",
+    "test:e2e:regression": "start-server-and-test start:services http://localhost:3000 cy:run:regression"
+  },
+  "devDependencies": {
+    "@cypress/grep": "^4.1.0",
+    "@types/node": "^24.1.0",
+    "concurrently": "^8.2.0",
+    "cypress": "^14.5.3",
+    "start-server-and-test": "^2.0.0",
+    "typescript": "^5.8.3"
+  },
+  "keywords": [
+    "cypress",
+    "testing",
+    "e2e",
+    "automation",
+    "typescript",
+    "inventory-management"
+  ],
+  "author": "",
+  "license": "MIT"
+}
