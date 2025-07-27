@@ -62,7 +62,7 @@ const OrderManagement = () => {
     }
 
     try {
-      const response = await api.post('/orders', {
+      await api.post('/orders', {
         itemId: parseInt(selectedItemId),
         quantity: parseInt(quantity)
       });

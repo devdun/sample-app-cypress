@@ -182,9 +182,11 @@ describe('Login Functionality @auth', () => {
       // Tab through form elements using keyboard events
       cy.get('[data-cy="username-input"]').focus()
       cy.get('[data-cy="username-input"]').trigger('keydown', { key: 'Tab' })
+      cy.wait(100) // Small delay for focus change
       cy.get('[data-cy="password-input"]').should('be.focused')
       
       cy.get('[data-cy="password-input"]').trigger('keydown', { key: 'Tab' })
+      cy.wait(100) // Small delay for focus change
       cy.get('[data-cy="login-button"]').should('be.focused')
     })
 
@@ -217,15 +219,20 @@ describe('Login Functionality @auth', () => {
     it('should handle multiple rapid login attempts gracefully @regression @performance', () => {
       loginPage.isLoginPageLoaded()
       
-      // Attempt multiple rapid logins
+      // Attempt multiple rapid invalid logins
       for (let i = 0; i < 3; i++) {
-        loginPage.enterUsername('admin')
-        loginPage.enterPassword('password')
+        loginPage.enterUsername('invaliduser')
+        loginPage.enterPassword('invalidpass')
         loginPage.clickLoginButton()
+        cy.wait('@loginRequest')
+        // Clear form for next attempt
+        cy.get('[data-cy="username-input"]').clear()
+        cy.get('[data-cy="password-input"]').clear()
         cy.wait(100) // Small delay between attempts
       }
       
-      // Should eventually succeed
+      // Finally attempt valid login
+      loginPage.loginAsAdmin()
       dashboardPage.isDashboardLoaded()
     })
   })

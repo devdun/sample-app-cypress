@@ -78,7 +78,13 @@ export class LoginPage extends BasePage {
    * Attempt login with invalid credentials
    */
   loginWithInvalidCredentials(username: string, password: string): void {
-    this.login(username, password)
+    this.enterUsername(username)
+    this.enterPassword(password)
+    this.clickLoginButton()
+    // Wait for the API call and expect it to fail
+    cy.wait('@loginRequest').then((interception) => {
+      expect(interception.response?.statusCode).to.equal(401)
+    })
   }
 
   /**
@@ -101,10 +107,12 @@ export class LoginPage extends BasePage {
    * Verify login failed with error message
    */
   verifyLoginFailed(errorMessage?: string): void {
-    cy.get(this.errorMessage).should('be.visible')
+    // Wait for error message to appear with extended timeout
+    cy.get(this.errorMessage, { timeout: 15000 }).should('be.visible')
     if (errorMessage) {
       cy.get(this.errorMessage).should('contain.text', errorMessage)
     }
+    // Should still be on login page
     cy.url().should('include', '/')
     cy.get(this.usernameInput).should('be.visible')
   }

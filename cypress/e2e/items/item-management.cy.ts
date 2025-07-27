@@ -85,7 +85,9 @@ describe('Item Management @items', () => {
       itemsPage.verifyMultipleItemsExist(itemTitles)
       
       // Verify items count (2 initial items + 3 new items = 5 total)
-      itemsPage.verifyItemsCountInHeader(2 + items.length)
+      const expectedTotal = 2 + items.length
+      cy.log(`Expected total items: ${expectedTotal} (2 initial + ${items.length} new)`)
+      itemsPage.verifyItemsCountInHeader(expectedTotal)
     })
 
     it('should cancel edit operation @regression', () => {
