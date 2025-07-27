@@ -11,6 +11,11 @@ jobs:
   sanity-tests:
     runs-on: ubuntu-latest
     
+    permissions:
+      issues: write
+      contents: read
+      pull-requests: write
+    
     strategy:
       matrix:
         node-version: [18.x]
