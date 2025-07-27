@@ -1,0 +1,222 @@
+name: Sanity Tests
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+  workflow_dispatch: # Allow manual triggering
+
+jobs:
+  sanity-tests:
+    runs-on: ubuntu-latest
+    
+    strategy:
+      matrix:
+        node-version: [18.x]
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+      
+      - name: Install backend dependencies
+        working-directory: ./backend
+        run: npm ci
+      
+      - name: Install frontend dependencies
+        working-directory: ./frontend
+        run: npm ci
+      
+      - name: Install Cypress dependencies
+        run: npm ci
+      
+      - name: Lint backend code
+        working-directory: ./backend
+        run: |
+          # Add linting if package.json has lint script
+          if npm run | grep -q "lint"; then
+            npm run lint
+          else
+            echo "No linting script found, skipping..."
+          fi
+      
+      - name: Lint frontend code
+        working-directory: ./frontend
+        run: |
+          # Add linting if package.json has lint script
+          if npm run | grep -q "lint"; then
+            npm run lint
+          else
+            echo "No linting script found, skipping..."
+          fi
+      
+      - name: Run backend unit tests
+        working-directory: ./backend
+        run: |
+          # Run unit tests if available
+          if npm run | grep -q "test"; then
+            npm test
+          else
+            echo "No unit tests found, skipping..."
+          fi
+        env:
+          NODE_ENV: test
+      
+      - name: Run frontend unit tests
+        working-directory: ./frontend
+        run: |
+          # Run unit tests if available
+          if npm run | grep -q "test"; then
+            npm test -- --coverage --watchAll=false
+          else
+            echo "No unit tests found, skipping..."
+          fi
+        env:
+          NODE_ENV: test
+          CI: true
+      
+      - name: Build frontend
+        working-directory: ./frontend
+        run: npm run build
+        env:
+          NODE_ENV: production
+          REACT_APP_API_URL: http://localhost:5000
+      
+      - name: Start backend server
+        working-directory: ./backend
+        run: |
+          npm start &
+          sleep 10
+          # Health check
+          curl -f http://localhost:5000/health || exit 1
+        env:
+          NODE_ENV: test
+      
+      - name: Start frontend server
+        working-directory: ./frontend
+        run: |
+          npm start &
+          sleep 20
+          # Health check
+          curl -f http://localhost:3000 || exit 1
+        env:
+          NODE_ENV: test
+          REACT_APP_API_URL: http://localhost:5000
+      
+      - name: Run Cypress sanity tests
+        uses: cypress-io/github-action@v6
+        with:
+          install: false
+          wait-on: 'http://localhost:3000, http://localhost:5000/health'
+          wait-on-timeout: 120
+          browser: chrome
+          headless: true
+          # Run only critical sanity tests using tags
+          command: npm run cy:run:sanity
+          config: |
+            {
+              "baseUrl": "http://localhost:3000",
+              "video": true,
+              "screenshotOnRunFailure": true,
+              "viewportWidth": 1280,
+              "viewportHeight": 720,
+              "defaultCommandTimeout": 8000,
+              "requestTimeout": 8000,
+              "responseTimeout": 8000
+            }
+        env:
+          CYPRESS_baseUrl: http://localhost:3000
+          CYPRESS_apiUrl: http://localhost:5000
+          CYPRESS_adminUsername: admin
+          CYPRESS_adminPassword: password
+          CYPRESS_regularUsername: user1
+          CYPRESS_regularPassword: user123
+          CYPRESS_grepTags: "@sanity"
+      
+      - name: Upload Cypress screenshots
+        uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: cypress-screenshots-sanity-${{ github.run_number }}
+          path: cypress/screenshots
+          retention-days: 3
+      
+      - name: Upload Cypress videos
+        uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: cypress-videos-sanity-${{ github.run_number }}
+          path: cypress/videos
+          retention-days: 3
+      
+      - name: Upload frontend build
+        uses: actions/upload-artifact@v4
+        if: success()
+        with:
+          name: frontend-build-${{ github.run_number }}
+          path: frontend/build
+          retention-days: 1
+      
+      - name: Generate test report
+        if: always()
+        run: |
+          echo "## Sanity Test Results" >> $GITHUB_STEP_SUMMARY
+          echo "- **Test Suite**: Critical Sanity Tests" >> $GITHUB_STEP_SUMMARY
+          echo "- **Trigger**: Code Push/PR" >> $GITHUB_STEP_SUMMARY
+          echo "- **Browser**: Chrome (headless)" >> $GITHUB_STEP_SUMMARY
+          echo "- **Commit**: ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Branch**: ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
+          
+          if [ "${{ job.status }}" == "success" ]; then
+            echo "- **Status**: ✅ PASSED" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "- **Status**: ❌ FAILED" >> $GITHUB_STEP_SUMMARY
+          fi
+      
+      - name: Comment on PR
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const status = '${{ job.status }}' === 'success' ? '✅ PASSED' : '❌ FAILED'
+            const body = `
+            ## 🧪 Sanity Test Results
+            
+            **Status**: ${status}
+            **Commit**: ${{ github.sha }}
+            **Tests Run**: Critical sanity tests (authentication, basic functionality)
+            
+            ${status.includes('FAILED') ? 
+              '⚠️ **Action Required**: Please fix the failing tests before merging.' : 
+              '🎉 **Ready**: All critical tests are passing!'}
+            
+            **Artifacts**: ${status.includes('FAILED') ? 'Screenshots and videos available in workflow run' : 'Build artifacts available'}
+            
+            [View Details](${context.payload.repository.html_url}/actions/runs/${context.runId})
+            `
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: body
+            })
+      
+      - name: Block PR on test failure
+        if: failure() && github.event_name == 'pull_request'
+        run: |
+          echo "❌ Sanity tests failed. This PR should not be merged until tests pass."
+          exit 1
+      
+      - name: Cleanup
+        if: always()
+        run: |
+          # Kill any remaining processes
+          pkill -f "npm start" || true
+          pkill -f "node server.js" || true 
