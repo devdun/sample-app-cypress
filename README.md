@@ -168,12 +168,39 @@ Project_And_Cypress/
 - No rate limiting
 - No input sanitization beyond basic validation
 
-## 📈 Next Steps for Testing
+## 🧪 Testing Framework
 
-This application is ready for:
-1. **Cypress E2E Testing** - All UI elements have test selectors
-2. **API Testing** - RESTful endpoints with consistent responses
-3. **Unit Testing** - Modular component structure
-4. **Integration Testing** - Clear separation between frontend/backend
+### Cypress E2E Testing
+This project includes a comprehensive **Cypress testing framework** with TypeScript and Page Object Model:
 
-The application provides a solid foundation for demonstrating various testing strategies and automation techniques. 
+```bash
+# Quick start - run sanity tests
+npm run test:sanity
+
+# Open Cypress interactively  
+npm run cy:open
+
+# Run all tests
+npm run test:all
+```
+
+**Test Categories:**
+- 🟢 **Sanity Tests** (`@sanity`) - Core functionality
+- 🔵 **Regression Tests** (`@regression`) - Full test suite  
+- 🟡 **Smoke Tests** (`@smoke`) - Quick validation
+
+**Available Test Commands:**
+```bash
+npm run test:sanity        # Critical tests only
+npm run test:regression    # Complete test suite
+npm run test:auth          # Authentication tests
+npm run test:crud          # CRUD operations
+npm run test:security      # Security tests
+```
+
+### CI/CD Integration
+- ✅ **GitHub Actions** - Automated testing on push/PR
+- ✅ **Scheduled Tests** - Regression tests every 6 hours
+- ✅ **Test Reports** - Detailed results and artifacts
+
+📖 **For detailed testing instructions, see:** [`cypress/e2e/README.md`](cypress/e2e/README.md) 
