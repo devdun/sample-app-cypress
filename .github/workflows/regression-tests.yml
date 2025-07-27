@@ -18,7 +18,7 @@ jobs:
       matrix:
         node-version: [18.x]
     
-        steps:
+    steps:
       - name: Checkout repository
         uses: actions/checkout@v4
       
@@ -136,8 +136,7 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo,
               title: `Regression Tests Failed - ${new Date().toISOString()}`,
-              body: `
-              🚨 **Regression Test Failure**
+              body: `🚨 **Regression Test Failure**
               
               The scheduled regression tests have failed.
               
@@ -156,8 +155,7 @@ jobs:
               3. Fix any broken functionality
               4. Re-run tests to verify fixes
               
-              [View Workflow Run](${context.payload.repository.html_url}/actions/runs/${context.runId})
-              `,
+              [View Workflow Run](${context.payload.repository.html_url}/actions/runs/${context.runId})`,
               labels: ['bug', 'regression', 'automated-test-failure']
             })
       
