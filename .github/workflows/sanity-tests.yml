@@ -116,7 +116,6 @@ jobs:
           wait-on: 'http://localhost:3000, http://localhost:5000/health'
           wait-on-timeout: 120
           browser: chrome
-          headless: true
           # Run only critical sanity tests using tags
           command: npm run cy:run:sanity
           config: |

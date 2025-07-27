@@ -5,8 +5,8 @@
   "scripts": {
     "cy:open": "cypress open",
     "cy:run": "cypress run",
-    "cy:run:sanity": "cypress run --env grepTags=\"@sanity\"",
-    "cy:run:regression": "cypress run --env grepTags=\"@regression\"",
+    "cy:run:sanity": "cypress run --quiet --env grepTags=\"@sanity\"",
+    "cy:run:regression": "cypress run --quiet --env grepTags=\"@regression\"",
     "cy:run:smoke": "cypress run --env grepTags=\"@smoke\"",
     "cy:run:auth": "cypress run --env grepTags=\"@auth\"",
     "cy:run:crud": "cypress run --env grepTags=\"@crud\"",
