@@ -84,8 +84,8 @@ describe('Item Management @items', () => {
       const itemTitles = items.map(item => item.title)
       itemsPage.verifyMultipleItemsExist(itemTitles)
       
-      // Verify items count
-      itemsPage.verifyItemsCountInHeader(items.length)
+      // Verify items count (2 initial items + 3 new items = 5 total)
+      itemsPage.verifyItemsCountInHeader(2 + items.length)
     })
 
     it('should cancel edit operation @regression', () => {
