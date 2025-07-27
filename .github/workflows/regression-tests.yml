@@ -18,13 +18,7 @@ jobs:
       matrix:
         node-version: [18.x]
     
-    services:
-      # Start backend API service
-      backend:
-        image: node:18
-        options: --health-cmd="curl -f http://localhost:5000/health || exit 1" --health-interval=30s --health-timeout=10s --health-retries=3
-    
-    steps:
+        steps:
       - name: Checkout repository
         uses: actions/checkout@v4
       
