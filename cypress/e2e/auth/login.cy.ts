@@ -140,11 +140,17 @@ describe('Login Functionality @auth', () => {
 
     it('should handle XSS attempts safely @regression @security', () => {
       loginPage.isLoginPageLoaded()
+      
+      // Spy on window.alert to detect if XSS triggers an alert
+      cy.window().then((win) => {
+        cy.spy(win, 'alert').as('windowAlert')
+      })
+      
       loginPage.loginWithInvalidCredentials('<script>alert("xss")</script>', 'password')
       
       loginPage.verifyLoginFailed('Invalid credentials')
-      // Verify no script execution
-      cy.window().its('alert').should('not.exist')
+      // Verify no alert was called (XSS was prevented)
+      cy.get('@windowAlert').should('not.have.been.called')
     })
   })
 
@@ -180,13 +186,28 @@ describe('Login Functionality @auth', () => {
       loginPage.isLoginPageLoaded()
       
       // Tab through form elements using keyboard events
-      cy.get('[data-cy="username-input"]').focus()
-      cy.get('[data-cy="username-input"]').trigger('keydown', { key: 'Tab' })
-      cy.wait(100) // Small delay for focus change
+      cy.get('[data-cy="username-input"]').focus().should('be.focused')
+      
+      // Simulate Tab key press with more comprehensive event
+      cy.get('[data-cy="username-input"]').trigger('keydown', { 
+        key: 'Tab', 
+        code: 'Tab', 
+        keyCode: 9,
+        which: 9 
+      })
+      
+      // Verify focus moved to password field
       cy.get('[data-cy="password-input"]').should('be.focused')
       
-      cy.get('[data-cy="password-input"]').trigger('keydown', { key: 'Tab' })
-      cy.wait(100) // Small delay for focus change
+      // Tab to next element
+      cy.get('[data-cy="password-input"]').trigger('keydown', { 
+        key: 'Tab', 
+        code: 'Tab', 
+        keyCode: 9,
+        which: 9 
+      })
+      
+      // Verify focus moved to login button
       cy.get('[data-cy="login-button"]').should('be.focused')
     })
 
