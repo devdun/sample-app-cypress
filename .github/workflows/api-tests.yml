@@ -1,0 +1,172 @@
+name: API Tests (Newman/Postman)
+
+on:
+  schedule:
+    # Run API tests every 12 hours (at 00:00 and 12:00 UTC)
+    - cron: '0 */12 * * *'
+  workflow_dispatch: # Allow manual triggering
+  push:
+    branches: [ main, develop ]
+    paths:
+      - 'backend/**'
+      - 'tests/api/**'
+      - '.github/workflows/api-tests.yml'
+
+jobs:
+  api-tests:
+    runs-on: ubuntu-latest
+    
+    permissions:
+      issues: write
+      contents: read
+    
+    strategy:
+      matrix:
+        node-version: [18.x]
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Install Newman globally
+        run: npm install -g newman newman-reporter-htmlextra
+      
+      - name: Install backend dependencies
+        working-directory: ./backend
+        run: npm ci
+      
+      - name: Create API test reports directory
+        run: mkdir -p tests/api/reports
+      
+      - name: Start backend server
+        working-directory: ./backend
+        run: |
+          npm start &
+          sleep 10
+          # Health check to ensure server is ready
+          curl -f http://localhost:5000/health || exit 1
+        env:
+          NODE_ENV: test
+      
+      - name: Wait for backend to be fully ready
+        run: |
+          echo "🔍 Waiting for backend API to be fully operational..."
+          sleep 5
+          
+          # Additional health checks
+          curl -f http://localhost:5000/health
+          echo "✅ Backend server is ready for API testing"
+      
+      - name: Run API Tests with Newman
+        run: |
+          echo "🧪 Running API tests with Newman..."
+          newman run tests/api/inventory-api-tests.postman_collection.json \
+            --reporters cli,htmlextra,junit \
+            --reporter-htmlextra-export tests/api/reports/api-test-report.html \
+            --reporter-htmlextra-template dashboard \
+            --reporter-htmlextra-title "Inventory API Test Report" \
+            --reporter-htmlextra-titleSize 4 \
+            --reporter-junit-export tests/api/reports/api-test-results.xml \
+            --env-var "base_url=http://localhost:5000" \
+            --timeout-request 10000 \
+            --timeout-script 5000 \
+            --color on \
+            --verbose
+      
+      - name: Upload API Test Reports
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: api-test-reports-${{ github.run_number }}
+          path: tests/api/reports/
+          retention-days: 7
+      
+      - name: Generate API Test Summary
+        if: always()
+        run: |
+          echo "## 🔌 API Test Results" >> $GITHUB_STEP_SUMMARY
+          echo "**Test Suite**: Backend API Tests (Newman/Postman)" >> $GITHUB_STEP_SUMMARY
+          echo "**Endpoints Tested**: POST /login, GET /items, POST /items, PUT /items/:id, DELETE /items/:id" >> $GITHUB_STEP_SUMMARY
+          echo "**Test Types**: Authentication, CRUD operations, Error handling" >> $GITHUB_STEP_SUMMARY
+          echo "**Trigger**: ${{ github.event_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Status**: ${{ job.status }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 📊 Test Coverage:" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ **Positive Tests**: Valid requests with expected responses" >> $GITHUB_STEP_SUMMARY
+          echo "- ❌ **Negative Tests**: Invalid requests and error handling" >> $GITHUB_STEP_SUMMARY
+          echo "- 🔒 **Authentication Tests**: Login flow and token validation" >> $GITHUB_STEP_SUMMARY
+          echo "- 📝 **CRUD Tests**: Create, Read, Update, Delete operations" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "📈 **Reports**: Available in artifacts as \`api-test-reports-${{ github.run_number }}\`" >> $GITHUB_STEP_SUMMARY
+      
+      - name: Check Test Results
+        if: always()
+        run: |
+          if [ -f tests/api/reports/api-test-results.xml ]; then
+            echo "✅ API test results file generated successfully"
+            
+            # Simple check for failures in XML (basic approach)
+            if grep -q 'failures="0"' tests/api/reports/api-test-results.xml; then
+              echo "🎉 All API tests passed!"
+            else
+              echo "⚠️ Some API tests may have failed. Check the detailed report."
+            fi
+          else
+            echo "❌ API test results file not found"
+            exit 1
+          fi
+      
+      - name: Create Issue on API Test Failure
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `🔌 API Tests Failed - ${new Date().toISOString().split('T')[0]}`,
+              body: `## 🚨 API Test Failure
+              
+              **Failure Details:**
+              - **Workflow**: API Tests (Newman/Postman)
+              - **Run ID**: ${{ github.run_id }}
+              - **Test Collection**: Inventory API Tests
+              - **Trigger**: ${{ github.event_name }}
+              - **Time**: ${new Date().toISOString()}
+              
+              **Endpoints Tested:**
+              - \`POST /login\` - Authentication
+              - \`GET /items\` - Retrieve items
+              - \`POST /items\` - Create items
+              - \`PUT /items/:id\` - Update items
+              - \`DELETE /items/:id\` - Delete items
+              
+              **Action Required:**
+              1. Review the failed tests in the [workflow run](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
+              2. Check the API test report in artifacts: \`api-test-reports-${{ github.run_number }}\`
+              3. Verify backend API endpoints are working correctly
+              4. Fix any failing API functionality
+              5. Re-run tests to verify fixes
+              
+              **Artifacts:**
+              - HTML Report: \`api-test-report.html\`
+              - JUnit Results: \`api-test-results.xml\`
+              `,
+              labels: ['bug', 'api-test-failure', 'backend', 'urgent']
+            })
+      
+      - name: Cleanup
+        if: always()
+        run: |
+          # Kill any remaining processes
+          pkill -f "npm start" || true
+          pkill -f "node server.js" || true 
