@@ -34,6 +34,45 @@ A simple todo application built with React frontend and Node.js backend API, des
 4. **Access the application:**
    Open http://localhost:3000 in your browser
 
+## 🚀 Quick Run Using Pipeline (1-2 minutes setup)
+
+Want to run tests without local setup? Use GitHub Actions directly!
+
+### **🔄 Run Regression Tests (All Tests)**
+1. **Navigate to Actions** → Go to [GitHub Actions](../../actions)
+2. **Select Workflow** → Click **"Regression Tests (All Tests)"** in left sidebar
+3. **Manual Trigger** → Click **"Run workflow"** button (top right)
+4. **Select Branch** → Choose **"main"** from dropdown
+5. **Execute** → Click green **"Run workflow"** button
+6. **Monitor** → Watch all 36 tests execute (~3-5 minutes)
+
+### **✅ Run Sanity Tests (Critical Tests Only)**
+1. **Navigate to Actions** → Go to [GitHub Actions](../../actions)
+2. **Select Workflow** → Click **"Sanity Tests (@sanity tags only)"** in left sidebar
+3. **Manual Trigger** → Click **"Run workflow"** button
+4. **Select Branch** → Choose **"main"** from dropdown
+5. **Execute** → Click green **"Run workflow"** button
+6. **Monitor** → Watch 11 critical tests execute (~2-3 minutes)
+
+### **🔌 Run API Tests (Backend Tests)**
+1. **Navigate to Actions** → Go to [GitHub Actions](../../actions)
+2. **Select Workflow** → Click **"API Tests (Newman/Postman)"** in left sidebar
+3. **Manual Trigger** → Click **"Run workflow"** button
+4. **Select Branch** → Choose **"main"** from dropdown
+5. **Execute** → Click green **"Run workflow"** button
+6. **Monitor** → Watch 11 API tests execute (~1-2 minutes)
+
+### **📊 View Test Results**
+- **Real-time Progress** → Watch green/red status in Actions tab
+- **Detailed Logs** → Click on any running workflow to see live logs
+- **Test Reports** → Download artifacts (screenshots, videos, HTML reports) after completion
+- **Issues** → Failed tests automatically create GitHub issues with details
+
+### **⏰ Automated Schedules**
+- **Regression Tests** → Every 8 hours automatically
+- **API Tests** → Every 12 hours automatically  
+- **Sanity Tests** → On every code push to main/develop
+
 ## 🔐 Demo Accounts
 
 - **Admin User:** username: `admin`, password: `password`
@@ -200,7 +239,7 @@ npm run test:security      # Security tests
 
 ### CI/CD Integration
 - ✅ **GitHub Actions** - Automated testing on push/PR
-- ✅ **Scheduled Tests** - Regression tests every 6 hours
+- ✅ **Scheduled Tests** - Regression tests every 8 hours
 - ✅ **Test Reports** - Detailed results and artifacts
 
 📖 **For detailed testing instructions, see:** [`cypress/e2e/README.md`](cypress/e2e/README.md) 
